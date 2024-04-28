@@ -1,7 +1,7 @@
 using UnityEngine;
-
 public class CarController : MonoBehaviour
 {
+    
     [Header("References")] 
     [SerializeField] private Rigidbody carRb;
     [SerializeField] private Transform[] rayPoints;
@@ -148,16 +148,19 @@ public class CarController : MonoBehaviour
         CalculateVelocity();
         Move();
         
+
     }
 
     private void Update()
     {
         GetPlayerInput();
+        
     }
 
 
     private void Start()
     {
         carRb = GetComponent<Rigidbody>();
+        
     }
 }
