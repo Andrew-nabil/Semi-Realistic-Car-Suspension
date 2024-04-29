@@ -1,4 +1,6 @@
+
 using UnityEngine;
+
 public class CarController : MonoBehaviour
 {
     
@@ -7,22 +9,28 @@ public class CarController : MonoBehaviour
     [SerializeField] private Transform[] rayPoints;
     [SerializeField] private LayerMask drivable;
     [SerializeField] private Transform accelerationPoint;
+    [SerializeField] private Transform flWheel;
+    [SerializeField] private Transform frWheel;
+    [SerializeField] private Transform brWheel;
+    [SerializeField] private Transform blWheel;
+    [SerializeField] private Transform frs;
+    [SerializeField] private Transform fls;
 
     [Header("Suspension Settings")] 
     //The maximum force the spring can do when its compressed
-    [SerializeField] private float springStiffness;
-    [SerializeField] private float damperStiffness; //D = zeta * 2 * sqrt(springStiffness*carMass
+    [SerializeField] private float springStiffness =30000;
+    [SerializeField] private float damperStiffness= 4000; //D = zeta * 2 * sqrt(springStiffness*carMass
     //The Standard Length of the theoretical spring when it's not compressed or stretched
-    [SerializeField] private float restLength;
+    [SerializeField] private float restLength = 0.5f;
     //The maximum distance that the spring can compress or stretch from the rest position 
-    [SerializeField] private float springTravel;
-    [SerializeField] private float wheelRadius;
+    [SerializeField] private float springTravel = 0.25f;
+    [SerializeField] private float wheelRadius = 0.12f;
     private int[] _wheelsGrounded = new int[4];
-    private bool _isGrounded = false;
+    private bool _isGrounded;
 
     [Header("Input")] 
-    private float _moveInput = 0;
-    private float _steerInput = 0;
+    private float _moveInput;
+    private float _steerInput;
 
     
     [Header("Car Settings")]
@@ -32,9 +40,12 @@ public class CarController : MonoBehaviour
     [SerializeField] private float steerStrength = 15f;
     [SerializeField] private AnimationCurve turningCurve;
     [SerializeField] private float dragCoefficient = 1;
+    [SerializeField] private float brakingDeceleration = 100;
+    [SerializeField] private float brakingDragCoefficient = 0.5f;
+    [SerializeField] private float wheelRotSpeed = 20;
     
     private Vector3 _currenLocalVelocity = Vector3.zero;
-    private float _velocityRatio = 0;
+    private float _velocityRatio;
 
     #region Car Status Check
 
@@ -62,7 +73,9 @@ public class CarController : MonoBehaviour
     private void GetPlayerInput()
     {
         _moveInput = Input.GetAxis("Vertical");
+        //_moveInput = Input.GetAxis("Acc");
         _steerInput = Input.GetAxis("Horizontal");
+        
     }
 
     #endregion
@@ -102,6 +115,16 @@ public class CarController : MonoBehaviour
 
     #region Movement
 
+    private void RotateWheels()
+    {
+        float wheelRot =  wheelRotSpeed * _velocityRatio * Time.deltaTime;
+        frWheel.Rotate(Vector3.up,wheelRot,Space.Self);
+        flWheel.Rotate(Vector3.up,wheelRot,Space.Self);
+        brWheel.Rotate(Vector3.up,wheelRot,Space.Self);
+        blWheel.Rotate(Vector3.up,wheelRot,Space.Self);
+        
+    }
+
     private void Move()
     {
         if (_isGrounded)
@@ -116,7 +139,7 @@ public class CarController : MonoBehaviour
     private void SideDrag()
     {
         float currentSideSpeed = _currenLocalVelocity.x;
-        float dragMagnitude = -currentSideSpeed * dragCoefficient;
+        float dragMagnitude = -currentSideSpeed * (Input.GetKey(KeyCode.Space) ? brakingDragCoefficient : dragCoefficient);
         Vector3 dragForce = dragMagnitude * transform.right;
         carRb.AddForceAtPosition(dragForce,carRb.worldCenterOfMass,ForceMode.Acceleration);
     }
@@ -124,17 +147,40 @@ public class CarController : MonoBehaviour
     private void Turn()
     {
         carRb.AddRelativeTorque(steerStrength * _steerInput * turningCurve.Evaluate(Mathf.Abs(_velocityRatio))*Mathf.Sign(_velocityRatio)*carRb.transform.up,ForceMode.Acceleration);
+
+        if (_steerInput !=0)
+        {
+            frs.localRotation = Quaternion.Euler(0,_steerInput*35,0);
+            fls.localRotation = Quaternion.Euler(0,_steerInput*35,0);
+        }
+
+        
+        
+
     }
 
     private void Accelerate()
     {
-        carRb.AddForceAtPosition(acceleration * _moveInput * transform.forward, accelerationPoint.position,ForceMode.Acceleration);
+        if (_currenLocalVelocity.z <= maxSpeed)
+        {
+            carRb.AddForceAtPosition(acceleration * _moveInput * carRb.transform.forward, accelerationPoint.position,ForceMode.Acceleration);
+        }
+        
+        
+        
+        
         
     }
 
     private void Decelerate()
     {
-        carRb.AddForceAtPosition(deceleration * _moveInput * -transform.forward, accelerationPoint.position,ForceMode.Acceleration);
+        if (_currenLocalVelocity.z <= maxSpeed)
+        {
+            
+            carRb.AddForce((Input.GetKey(KeyCode.Space) ? brakingDeceleration :deceleration) * _velocityRatio * -carRb.transform.forward,ForceMode.Acceleration);
+            
+        }
+        
         
     }
     
@@ -147,8 +193,27 @@ public class CarController : MonoBehaviour
         GroundCheck();
         CalculateVelocity();
         Move();
+        RotateWheels();
         
-
+        
+            /*print(Input.GetKey(KeyCode.JoystickButton0) + " 0");
+            print(Input.GetKey(KeyCode.JoystickButton1)+" 1");
+            print(Input.GetKey(KeyCode.JoystickButton2)+" 2");
+            print(Input.GetKey(KeyCode.JoystickButton3)+" 3");
+            print(Input.GetKey(KeyCode.JoystickButton4)+" 4");
+            print(Input.GetKey(KeyCode.JoystickButton5)+" 5");
+            print(Input.GetKey(KeyCode.JoystickButton6)+" 6");
+            print(Input.GetKey(KeyCode.JoystickButton7)+" 7");
+            print(Input.GetKey(KeyCode.JoystickButton8)+" 8");
+            print(Input.GetKey(KeyCode.JoystickButton9)+" 9");
+            print(Input.GetKey(KeyCode.JoystickButton10)+" 10");
+            print(Input.GetKey(KeyCode.JoystickButton11)+" 11");
+            print(Input.GetKey(KeyCode.JoystickButton12)+" 12");
+            print(Input.GetKey(KeyCode.JoystickButton13)+" 13");
+            print(Input.GetKey(KeyCode.JoystickButton14)+" 14");
+            print(Input.GetKey(KeyCode.JoystickButton15)+" 15");
+            print(Input.GetKey(KeyCode.JoystickButton16)+" 16");*/
+        
     }
 
     private void Update()
