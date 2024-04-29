@@ -129,13 +129,13 @@ public class CarController : MonoBehaviour
     private void Accelerate()
     {
         carRb.AddForceAtPosition(acceleration * _moveInput * transform.forward, accelerationPoint.position,ForceMode.Acceleration);
-        print(_moveInput);
+        
     }
 
     private void Decelerate()
     {
         carRb.AddForceAtPosition(deceleration * _moveInput * -transform.forward, accelerationPoint.position,ForceMode.Acceleration);
-        print(_moveInput);
+        
     }
     
 
